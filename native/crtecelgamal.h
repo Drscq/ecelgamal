@@ -132,4 +132,14 @@ int crtgamal_init(int curve_id);
  */
 int crtgamal_deinit();
 
+/**
+ * Re-randomizes a CRT-EC-ElGamal ciphertext
+ * @param res the resulting re-randomized ciphertext
+ * @param ciphertext the original ciphertext
+ * @param key the public key
+ * @return
+ */
+int crtgamal_rerandomize(crtgamal_ciphertext_t res, crtgamal_ciphertext_t ciphertext, crtgamal_key_t key);
+
+
 #endif //ECELGAMAL_CRTECELGAMAL_H

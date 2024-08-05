@@ -269,6 +269,49 @@ int test() {
     return 0;
 }
 
+void re_randomize(dig_t& res, dig_t plain) {
+    int tablebits = 16;
+    crtgamal_key_t key;
+    crtgamal_params_t params;
+    crtgamal_ciphertext_t cipher, cipher_res;
+    bsgs_table_t table;
+    srand (time(NULL));
+    crtgamal_init(CURVE_256_SEC);
+    crt_params_create_default(params, DEFAULT_32_INTEGER_PARAMS);
+    crtgamal_generate_keys(key, params);
+    gamal_init_bsgs_table(table, (dig_t) 1L << tablebits);
+    crtgamal_encrypt(cipher, key, plain);
+    std::cout << "Before: " << plain << std::endl;
+    for (int i=0; i<cipher->num_ciphertexts; i++) {
+        char *C1_hex = EC_POINT_point2hex(gamal_get_current_group(), cipher->ciphertexts[i]->C1, POINT_CONVERSION_COMPRESSED, NULL);
+        char *C2_hex = EC_POINT_point2hex(gamal_get_current_group(), cipher->ciphertexts[i]->C2, POINT_CONVERSION_COMPRESSED, NULL);
+        std::cout << "C1: " << C1_hex << " C2: " << C2_hex << std::endl;
+        OPENSSL_free(C1_hex);
+        OPENSSL_free(C2_hex);
+    }
+    crtgamal_ciphertext_t rerandomized_ciphertext;
+    crtgamal_rerandomize(rerandomized_ciphertext, cipher, key);
+    std::cout << "After: " << plain << std::endl;
+    for (int i=0; i<rerandomized_ciphertext->num_ciphertexts; i++) {
+        char *C1_hex = EC_POINT_point2hex(gamal_get_current_group(), rerandomized_ciphertext->ciphertexts[i]->C1, POINT_CONVERSION_COMPRESSED, NULL);
+        char *C2_hex = EC_POINT_point2hex(gamal_get_current_group(), rerandomized_ciphertext->ciphertexts[i]->C2, POINT_CONVERSION_COMPRESSED, NULL);
+        std::cout << "C1: " << C1_hex << " C2: " << C2_hex << std::endl;
+        OPENSSL_free(C1_hex);
+        OPENSSL_free(C2_hex);
+    }
+    crtgamal_decrypt(&res, key, rerandomized_ciphertext, table);
+    std::cout << res << std::endl;
+    if (res != plain)
+        std::cout << "ERROR" << std::endl;
+
+    // clean up
+    crtgamal_ciphertext_free(cipher);
+    crtgamal_ciphertext_free(rerandomized_ciphertext);
+    crtgamal_keys_clear(key);
+    gamal_free_bsgs_table(table);
+    gamal_deinit();
+
+}
 int main() {
     std::cout << OPENSSL_VERSION_TEXT << std::endl;
     //test1();
@@ -280,5 +323,8 @@ int main() {
     bench_crtelgamal(1000, 16, 32);
     std::cout << "CRT optimized EC-ElGamal 64-bit integers" << std::endl;
     bench_crtelgamal(1000, 17, 64);
+    std::cout << "Re-randomization CRT optimized EC-ElGamal 32-bit integers" << std::endl;
+    dig_t res;
+    re_randomize(res, 100);
     return 0;
 }

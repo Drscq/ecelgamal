@@ -313,3 +313,48 @@ int crt_decode_ciphertext(crtgamal_ciphertext_t ciphertext, unsigned char* buff,
     BN_CTX_free(ctx);
     return 0;
 }
+
+int crtgamal_rerandomize(crtgamal_ciphertext_t res, crtgamal_ciphertext_t ciphertext, crtgamal_key_t key) {
+    int num_splits = key->params->numsplits;
+    BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *ord = BN_new();
+    BIGNUM *rand = BN_new();
+    EC_GROUP *group = gamal_get_current_group();
+
+    EC_GROUP_get_order(group, ord, ctx);
+    
+    // Allocate space for the re-randomized ciphertext
+    crtgamal_ciphertext_new(res, num_splits);
+    
+    for (int i = 0; i < num_splits; i++) {
+        // Generate a new random valuecrtgamal_ciphertext_new
+        BN_rand_range(rand, ord);
+
+        // Calculate new C1 and C2 for each partition
+        EC_POINT *temp_C1 = EC_POINT_new(group);
+        EC_POINT *temp_C2 = EC_POINT_new(group);
+        EC_POINT *new_C1 = EC_POINT_new(group);
+        EC_POINT *new_C2 = EC_POINT_new(group);
+
+        // new_C1 = C1 + g^r
+        EC_POINT_mul(group, temp_C1, NULL, EC_GROUP_get0_generator(group), rand, ctx);
+        EC_POINT_add(group, new_C1, ciphertext->ciphertexts[i]->C1, temp_C1, ctx);
+
+        // new_C2 = C2 + Y^r
+        EC_POINT_mul(group, temp_C2, NULL, key->key->Y, rand, ctx);
+        EC_POINT_add(group, new_C2, ciphertext->ciphertexts[i]->C2, temp_C2, ctx);
+
+        // Store the new values in the resulting ciphertext
+        res->ciphertexts[i]->C1 = new_C1;
+        res->ciphertexts[i]->C2 = new_C2;
+
+        EC_POINT_free(temp_C1);
+        EC_POINT_free(temp_C2);
+    }
+
+    BN_free(rand);
+    BN_free(ord);
+    BN_CTX_free(ctx);
+    
+    return 0;
+}

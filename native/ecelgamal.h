@@ -39,7 +39,7 @@
 #include <openssl/bn.h>
 #include <openssl/objects.h>
 #include <inttypes.h>
-#include "uthash.h"
+#include "include/uthash.h"
 
 #define DEFAULT_CURVE NID_X9_62_prime192v1
 #define CURVE_256_SEC NID_X9_62_prime256v1
@@ -162,5 +162,14 @@ int gamal_decrypt(dig_t *res, gamal_key_t key, gamal_ciphertext_t ciphertext, bs
  * @return
  */
 int gamal_add(gamal_ciphertext_t res, gamal_ciphertext_t ciphertext1, gamal_ciphertext_t ciphertext2);
+/**
+ * Re-randomizes an EC-ElGamal ciphertext
+ * @param res the resulting re-randomized ciphertext
+ * @param ciphertext the original ciphertext
+ * @param key the public key
+ * @return
+ */
+int gamal_rerandomize(gamal_ciphertext_t res, gamal_ciphertext_t ciphertext, gamal_key_t key);
+
 
 #endif //ECELGAMAL_ECELGAMAL_H
